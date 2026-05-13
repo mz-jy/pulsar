@@ -8,6 +8,7 @@ import logging
 from typing import Dict, Optional
 
 from .db import Database, Job, JobRun
+from .subproc import child_environ
 
 logger = logging.getLogger("pulsar.executor")
 
@@ -77,6 +78,7 @@ class JobExecutor:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
+                env=child_environ(),
             )
             with self._lock:
                 self._procs[run.id] = proc
