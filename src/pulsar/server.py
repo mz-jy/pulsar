@@ -56,18 +56,23 @@ def create_app(db: Database, executor: JobExecutor, scheduler: JobScheduler) -> 
         next_runs = scheduler.get_next_runs()
         out = []
         for j in jobs:
-            last_runs = db.get_runs(j.id, limit=1)
+            last_runs = db.get_runs(j.id, limit=30)
             last = None
             if last_runs:
                 lr = last_runs[0]
                 last = {"id": lr.id, "status": lr.status,
                         "started_at": lr.started_at, "finished_at": lr.finished_at}
+            recent = [
+                {"id": r.id, "status": r.status, "started_at": r.started_at}
+                for r in reversed(last_runs)
+            ]
             out.append({
                 "id": j.id, "name": j.name, "script_path": j.script_path,
                 "cron_expression": j.cron_expression, "args": j.args,
                 "enabled": j.enabled, "created_at": j.created_at,
                 "run_as_module": j.run_as_module,
                 "next_run": next_runs.get(j.id), "last_run": last,
+                "recent_runs": recent,
             })
         return out
 
