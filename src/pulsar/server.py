@@ -233,7 +233,7 @@ tr:hover td{background:#f9fafb}
   <div class="card">
     <div class="card-hdr"><h2>Registered Jobs</h2><button class="btn bp" onclick="openAdd()">+ Add Job</button></div>
     <div id="jWrap">
-      <table><thead><tr><th>Name</th><th>Script</th><th>Cron</th><th>Next Run</th><th>Last Run</th><th>On</th><th>Actions</th></tr></thead>
+      <table><thead><tr><th>Name</th><th>Script</th><th>Cron</th><th>Next Run</th><th>Last Run</th><th>Runs</th><th>On</th><th>Actions</th></tr></thead>
       <tbody id="jTb"></tbody></table>
       <div id="jE" class="empty" style="display:none">No jobs registered. Click <b>+ Add Job</b> to get started.</div>
     </div>
@@ -279,6 +279,18 @@ function fmt(s){if(s<60)return s+'s';if(s<3600)return Math.floor(s/60)+'m';if(s<
 function dur(a,b){if(!a||!b)return'-';const s=(new Date(b)-new Date(a))/1e3;if(s<60)return s.toFixed(1)+'s';if(s<3600)return Math.floor(s/60)+'m '+Math.floor(s%60)+'s';return Math.floor(s/3600)+'h '+Math.floor((s%3600)/60)+'m'}
 function ts(iso){if(!iso)return'-';return new Date(iso).toLocaleString()}
 function bg(st){const m={success:'b-ok',failed:'b-fail',running:'b-run',crashed:'b-crash',cancelled:'b-cancel'};return `<span class="b ${m[st]||''}">${st}</span>`}
+function renderDots(runs){
+  const colMap={success:'#4ade80',failed:'#f87171',running:'#60a5fa',crashed:'#fbbf24',cancelled:'#d1d5db'};
+  const filled=(runs||[]).map(r=>{
+    const col=colMap[r.status]||'#d1d5db';
+    const tip=`${r.status} — ${r.started_at?new Date(r.started_at).toLocaleString():'-'}`;
+    const anim=r.status==='running'?';animation:pulse 2s infinite':'';
+    return `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col};margin:1px${anim}" title="${tip}"></span>`;
+  });
+  const empty=30-filled.length;
+  const empties=empty>0?Array(empty).fill('<span style="display:inline-block;width:8px;height:8px;border-radius:50%;border:1px solid #e5e7eb;background:transparent;margin:1px"></span>'):[];
+  return [...empties,...filled].join('');
+}
 
 async function fStatus(){try{const r=await(await fetch('/api/status')).json();$('sDot').style.background='#4ade80';$('sTxt').textContent=`Running · PID ${r.pid} · ${r.active_jobs} active`}catch{$('sDot').style.background='#ef4444';$('sTxt').textContent='Disconnected'}}
 
@@ -289,6 +301,7 @@ tb.innerHTML=jobs.map(j=>`<tr>
 <td class="mono">${esc(j.cron_expression)}</td>
 <td>${j.next_run?ago(j.next_run)+'<br><span class="muted" style="font-size:10px">'+ts(j.next_run)+'</span>':'-'}</td>
 <td>${j.last_run?bg(j.last_run.status)+' '+ago(j.last_run.started_at):'-'}</td>
+<td style="white-space:nowrap">${renderDots(j.recent_runs)}</td>
 <td><input type="checkbox" class="tgl" ${j.enabled?'checked':''} onchange="doToggle('${j.id}')"></td>
 <td class="acts"><button class="btn" onclick="doTrigger('${j.id}')">▶ Run</button><button class="btn bd" onclick="doRemove('${j.id}','${esc(j.name)}')">✕</button></td>
 </tr>`).join('')}
