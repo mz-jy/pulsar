@@ -25,7 +25,7 @@ class AddJobRequest(BaseModel):
 # ── app factory ─────────────────────────────────────────────────────────
 
 def create_app(db: Database, executor: JobExecutor, scheduler: JobScheduler) -> FastAPI:
-    app = FastAPI(title="PyRunner", docs_url="/docs")
+    app = FastAPI(title="Pulsar", docs_url="/docs")
     start_time = datetime.now(timezone.utc)
 
     # ── Web UI ──────────────────────────────────────────────────────────
@@ -144,7 +144,7 @@ _HTML = r"""<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PyRunner</title>
+<title>Pulsar</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f2f5;color:#1a1a2e;font-size:14px}
@@ -216,7 +216,7 @@ tr:hover td{background:#f9fafb}
 <body>
 
 <div class="hdr">
-  <h1><span>⚡</span> PyRunner</h1>
+  <h1><span>◉</span> Pulsar</h1>
   <div class="st"><div class="dot" id="sDot" style="background:#6b7280"></div><span id="sTxt">Connecting…</span></div>
 </div>
 

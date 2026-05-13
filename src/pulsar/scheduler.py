@@ -9,7 +9,7 @@ from apscheduler.triggers.cron import CronTrigger
 from .db import Database, Job
 from .executor import JobExecutor
 
-logger = logging.getLogger("pyrunner.scheduler")
+logger = logging.getLogger("pulsar.scheduler")
 
 
 class JobScheduler:
@@ -42,7 +42,7 @@ class JobScheduler:
             self.executor.execute,
             trigger=trigger,
             args=[job.id, "scheduler"],
-            id=f"pyrunner_{job.id}",
+            id=f"pulsar_{job.id}",
             name=job.name,
             replace_existing=True,
         )

@@ -9,7 +9,7 @@ from typing import Dict, Optional
 
 from .db import Database, Job, JobRun
 
-logger = logging.getLogger("pyrunner.executor")
+logger = logging.getLogger("pulsar.executor")
 
 
 class JobExecutor:

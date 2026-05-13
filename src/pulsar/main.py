@@ -1,13 +1,13 @@
 """
-PyRunner — a lightweight Python process manager.
+Pulsar — a lightweight Python job scheduler.
 
 Usage:
-    python main.py serve [--host 0.0.0.0] [--port 8844]
-    python main.py add <name> <script> <cron> [--args "..."]
-    python main.py list
-    python main.py trigger <job_id> [--host localhost] [--port 8844]
-    python main.py remove <job_id>
-    python main.py history [--job-id <id>] [--limit 20]
+    pulsar serve [--host 0.0.0.0] [--port 8844]
+    pulsar add <name> <script> <cron> [--args "..."]
+    pulsar list
+    pulsar trigger <job_id> [--host localhost] [--port 8844]
+    pulsar remove <job_id>
+    pulsar history [--job-id <id>] [--limit 20]
 """
 
 import argparse
@@ -27,7 +27,7 @@ logging.basicConfig(
     format="%(asctime)s  %(levelname)-5s  %(name)s — %(message)s",
     datefmt="%H:%M:%S",
 )
-log = logging.getLogger("pyrunner")
+log = logging.getLogger("pulsar")
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -46,7 +46,7 @@ def cmd_serve(args):
 
     app = create_app(db, executor, sched)
 
-    log.info("PyRunner starting → http://%s:%s", args.host, args.port)
+    log.info("Pulsar starting → http://%s:%s", args.host, args.port)
     try:
         uvicorn.run(app, host=args.host, port=args.port, log_level="warning")
     except KeyboardInterrupt:
@@ -54,7 +54,7 @@ def cmd_serve(args):
     finally:
         sched.stop()
         db.close()
-        log.info("PyRunner stopped.")
+        log.info("Pulsar stopped.")
 
 
 def cmd_add(args):
@@ -159,15 +159,15 @@ def _ping_reload(args):
 
 def main():
     p = argparse.ArgumentParser(
-        prog="pyrunner",
-        description="PyRunner — lightweight Python process manager",
+        prog="pulsar",
+        description="Pulsar — lightweight Python job scheduler",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=textwrap.dedent("""\
             examples:
-              python main.py serve
-              python main.py add daily-report ./report.py "0 9 * * *"
-              python main.py trigger abc12345
-              python main.py history --limit 10
+              pulsar serve
+              pulsar add daily-report ./report.py "0 9 * * *"
+              pulsar trigger abc12345
+              pulsar history --limit 10
         """),
     )
     p.add_argument("--db", default="pyrunner.duckdb", help="DuckDB file path (default: pyrunner.duckdb)")
