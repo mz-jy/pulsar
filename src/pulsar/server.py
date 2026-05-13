@@ -20,6 +20,7 @@ class AddJobRequest(BaseModel):
     script_path: str
     cron_expression: str
     args: str = ""
+    run_as_module: bool = False
 
 
 # ── app factory ─────────────────────────────────────────────────────────
@@ -65,6 +66,7 @@ def create_app(db: Database, executor: JobExecutor, scheduler: JobScheduler) -> 
                 "id": j.id, "name": j.name, "script_path": j.script_path,
                 "cron_expression": j.cron_expression, "args": j.args,
                 "enabled": j.enabled, "created_at": j.created_at,
+                "run_as_module": j.run_as_module,
                 "next_run": next_runs.get(j.id), "last_run": last,
             })
         return out
@@ -72,7 +74,8 @@ def create_app(db: Database, executor: JobExecutor, scheduler: JobScheduler) -> 
     @app.post("/api/jobs")
     async def add_job(req: AddJobRequest):
         try:
-            job = db.add_job(req.name, req.script_path, req.cron_expression, req.args)
+            job = db.add_job(req.name, req.script_path, req.cron_expression,
+                             req.args, req.run_as_module)
             if job.enabled:
                 scheduler.schedule(job)
             return {"id": job.id, "name": job.name}

@@ -61,8 +61,9 @@ def cmd_add(args):
     """Register a new job (writes directly to DB)."""
     db = Database(args.db)
     try:
-        job = db.add_job(args.name, args.script, args.cron, args.args or "")
-        print(f"✓ Added job '{job.name}' (id={job.id}, cron='{job.cron_expression}')")
+        job = db.add_job(args.name, args.script, args.cron, args.args or "", args.module)
+        mode = "module (-m)" if args.module else "script"
+        print(f"✓ Added job '{job.name}' (id={job.id}, cron='{job.cron_expression}', type={mode})")
         # try to tell a running server to reload
         _ping_reload(args)
     except Exception as exc:
@@ -181,9 +182,11 @@ def main():
     # add
     s = sub.add_parser("add", help="Register a new job")
     s.add_argument("name", help="Unique job name")
-    s.add_argument("script", help="Path to Python script")
+    s.add_argument("script", help="Path to a Python script or dotted module name")
     s.add_argument("cron", help="5-field cron expression (quote it)")
     s.add_argument("--args", default="", help="Extra CLI args for the script")
+    s.add_argument("--module", action="store_true", default=False,
+                   help="Run as module: python -m <name>")
     s.add_argument("--host", default="localhost")
     s.add_argument("--port", type=int, default=8844)
 
