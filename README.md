@@ -16,11 +16,11 @@ A lightweight Python process manager with DuckDB persistence, cron scheduling, a
 ## Quick Start
 
 ```bash
-# 1. Install dependencies
-pip install -r requirements.txt
+# 1. Install
+pip install pulsar-scheduler
 
 # 2. Start the server
-python main.py serve
+pulsar serve
 
 # 3. Open http://localhost:8844 in your browser
 ```
