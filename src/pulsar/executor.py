@@ -58,10 +58,17 @@ class JobExecutor:
 
     # ── internal ────────────────────────────────────────────────────────
 
-    def _run(self, job: Job, run: JobRun):
-        cmd = [sys.executable, job.script_path]
+    def _build_cmd(self, job: Job) -> list:
+        if job.run_as_module:
+            cmd = [sys.executable, "-m", job.script_path]
+        else:
+            cmd = [sys.executable, job.script_path]
         if job.args:
             cmd.extend(shlex.split(job.args))
+        return cmd
+
+    def _run(self, job: Job, run: JobRun):
+        cmd = self._build_cmd(job)
 
         try:
             logger.info("▶ Starting  %s  (run %s): %s", job.name, run.id, " ".join(cmd))
