@@ -1,11 +1,12 @@
-"""DuckDB storage layer for PyRunner."""
+"""DuckDB storage layer for Pulsar."""
+
+import threading
+import uuid
+from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
+from typing import List, Optional
 
 import duckdb
-import uuid
-import threading
-from datetime import datetime, timezone
-from dataclasses import dataclass, asdict
-from typing import Optional, List
 
 
 def _now() -> str:
@@ -46,7 +47,7 @@ class JobRun:
 class Database:
     """Thread-safe DuckDB wrapper. All mutations go through a lock."""
 
-    def __init__(self, db_path: str = "pyrunner.duckdb"):
+    def __init__(self, db_path: str = "Pulsar.duckdb"):
         self._lock = threading.Lock()
         self._conn = duckdb.connect(db_path)
         self._init_schema()
@@ -98,15 +99,23 @@ class Database:
 
     # ── jobs CRUD ───────────────────────────────────────────────────────
 
-    def add_job(self, name: str, script_path: str, cron_expression: str,
-                args: str = "", run_as_module: bool = False) -> Job:
+    def add_job(
+        self,
+        name: str,
+        script_path: str,
+        cron_expression: str,
+        args: str = "",
+        run_as_module: bool = False,
+    ) -> Job:
         jid = _gen_id()
         now = _now()
         self._exec(
             "INSERT INTO jobs VALUES (?,?,?,?,?,TRUE,?,?,?)",
             [jid, name, script_path, cron_expression, args, now, now, run_as_module],
         )
-        return Job(jid, name, script_path, cron_expression, args, True, now, now, run_as_module)
+        return Job(
+            jid, name, script_path, cron_expression, args, True, now, now, run_as_module
+        )
 
     def get_jobs(self) -> List[Job]:
         return [Job(*r) for r in self._query("SELECT * FROM jobs ORDER BY name")]
@@ -146,13 +155,30 @@ class Database:
             "VALUES (?, ?, 'running', ?, ?, '', '')",
             [rid, job_id, triggered_by, now],
         )
-        return JobRun(rid, job_id, "running", triggered_by, now, None, None, "", "", None)
+        return JobRun(
+            rid, job_id, "running", triggered_by, now, None, None, "", "", None
+        )
 
-    def finish_run(self, rid: str, status: str, exit_code: int = None,
-                   stdout: str = "", stderr: str = "", pid: int = None):
+    def finish_run(
+        self,
+        rid: str,
+        status: str,
+        exit_code: int = None,
+        stdout: str = "",
+        stderr: str = "",
+        pid: int = None,
+    ):
         self._exec(
             "UPDATE job_runs SET status=?, finished_at=?, exit_code=?, stdout=?, stderr=?, pid=? WHERE id=?",
-            [status, _now(), exit_code, stdout[-50_000:] if stdout else "", stderr[-50_000:] if stderr else "", pid, rid],
+            [
+                status,
+                _now(),
+                exit_code,
+                stdout[-50_000:] if stdout else "",
+                stderr[-50_000:] if stderr else "",
+                pid,
+                rid,
+            ],
         )
 
     def set_run_pid(self, rid: str, pid: int):
@@ -166,7 +192,8 @@ class Database:
             )
         else:
             rows = self._query(
-                "SELECT * FROM job_runs ORDER BY started_at DESC LIMIT ?", [limit],
+                "SELECT * FROM job_runs ORDER BY started_at DESC LIMIT ?",
+                [limit],
             )
         return [JobRun(*r) for r in rows]
 

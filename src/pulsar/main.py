@@ -34,6 +34,7 @@ log = logging.getLogger("pulsar")
 # Commands
 # ═══════════════════════════════════════════════════════════════════════
 
+
 def cmd_serve(args):
     """Start the web server + scheduler."""
     db = Database(args.db)
@@ -61,9 +62,13 @@ def cmd_add(args):
     """Register a new job (writes directly to DB)."""
     db = Database(args.db)
     try:
-        job = db.add_job(args.name, args.script, args.cron, args.args or "", args.module)
+        job = db.add_job(
+            args.name, args.script, args.cron, args.args or "", args.module
+        )
         mode = "module (-m)" if args.module else "script"
-        print(f"✓ Added job '{job.name}' (id={job.id}, cron='{job.cron_expression}', type={mode})")
+        print(
+            f"✓ Added job '{job.name}' (id={job.id}, cron='{job.cron_expression}', type={mode})"
+        )
         # try to tell a running server to reload
         _ping_reload(args)
     except Exception as exc:
@@ -86,12 +91,16 @@ def cmd_list(args):
     print("─" * len(hdr))
     for j in jobs:
         flag = "✓" if j.enabled else "✗"
-        print(f"{j.id:<10} {j.name:<22} {j.cron_expression:<18} {flag:<5} {j.script_path}")
+        print(
+            f"{j.id:<10} {j.name:<22} {j.cron_expression:<18} {flag:<5} {j.script_path}"
+        )
 
 
 def cmd_trigger(args):
     """Trigger a job via the running server's API."""
-    import urllib.request, json
+    import json
+    import urllib.request
+
     url = f"http://{args.host}:{args.port}/api/jobs/{args.job_id}/trigger"
     try:
         req = urllib.request.Request(url, method="POST")
@@ -133,17 +142,21 @@ def cmd_history(args):
         d = ""
         if r.started_at and r.finished_at:
             from datetime import datetime
+
             sa = datetime.fromisoformat(r.started_at)
             fa = datetime.fromisoformat(r.finished_at)
             secs = (fa - sa).total_seconds()
             d = f"{secs:.1f}s"
         started = r.started_at[:19].replace("T", " ") if r.started_at else "-"
-        print(f"{r.id:<10} {names.get(r.job_id, '?'):<22} {r.status:<11} {r.triggered_by:<10} {started:<22} {d}")
+        print(
+            f"{r.id:<10} {names.get(r.job_id, '?'):<22} {r.status:<11} {r.triggered_by:<10} {started:<22} {d}"
+        )
 
 
 def _ping_reload(args):
     """Best-effort POST /api/reload to a running server."""
     import urllib.request
+
     host = getattr(args, "host", "localhost")
     port = getattr(args, "port", 8844)
     try:
@@ -158,6 +171,7 @@ def _ping_reload(args):
 # CLI parser
 # ═══════════════════════════════════════════════════════════════════════
 
+
 def main():
     p = argparse.ArgumentParser(
         prog="pulsar",
@@ -171,7 +185,11 @@ def main():
               pulsar history --limit 10
         """),
     )
-    p.add_argument("--db", default="pyrunner.duckdb", help="DuckDB file path (default: pyrunner.duckdb)")
+    p.add_argument(
+        "--db",
+        default="Pulsar.duckdb",
+        help="DuckDB file path (default: Pulsar.duckdb)",
+    )
     sub = p.add_subparsers(dest="cmd")
 
     # serve
@@ -185,8 +203,12 @@ def main():
     s.add_argument("script", help="Path to a Python script or dotted module name")
     s.add_argument("cron", help="5-field cron expression (quote it)")
     s.add_argument("--args", default="", help="Extra CLI args for the script")
-    s.add_argument("--module", action="store_true", default=False,
-                   help="Run as module: python -m <name>")
+    s.add_argument(
+        "--module",
+        action="store_true",
+        default=False,
+        help="Run as module: python -m <name>",
+    )
     s.add_argument("--host", default="localhost")
     s.add_argument("--port", type=int, default=8844)
 
@@ -212,8 +234,12 @@ def main():
 
     args = p.parse_args()
     dispatch = {
-        "serve": cmd_serve, "add": cmd_add, "list": cmd_list,
-        "trigger": cmd_trigger, "remove": cmd_remove, "history": cmd_history,
+        "serve": cmd_serve,
+        "add": cmd_add,
+        "list": cmd_list,
+        "trigger": cmd_trigger,
+        "remove": cmd_remove,
+        "history": cmd_history,
     }
     fn = dispatch.get(args.cmd)
     if fn:

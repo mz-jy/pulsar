@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Transform pyrunner into Pulsar — an installable Python job scheduler with `python -m` module support and an Airflow-style execution timeline in the UI.
+**Goal:** Transform Pulsar into Pulsar — an installable Python job scheduler with `python -m` module support and an Airflow-style execution timeline in the UI.
 
 **Architecture:** Files move from project root into `src/pulsar/` with relative imports, pyproject.toml gains build metadata and entry points, executor branches on a new `run_as_module` field, and the FastAPI `list_jobs` endpoint adds `recent_runs` per job for the dots UI.
 
@@ -12,26 +12,27 @@
 
 ## File Map
 
-| File | Action | Responsibility |
-|------|--------|----------------|
-| `src/pulsar/__init__.py` | Create | Package marker (empty) |
-| `src/pulsar/db.py` | Move + extend | DuckDB layer + `run_as_module` field |
-| `src/pulsar/executor.py` | Move + extend | Subprocess runner + `_build_cmd` |
-| `src/pulsar/scheduler.py` | Move | APScheduler wrapper |
-| `src/pulsar/server.py` | Move + extend | FastAPI app + UI HTML |
-| `src/pulsar/main.py` | Move + extend | CLI entry point |
-| `tests/__init__.py` | Create | Test package marker |
-| `tests/test_db.py` | Create | DB layer tests |
-| `tests/test_executor.py` | Create | Executor command-build tests |
-| `tests/test_api.py` | Create | API endpoint tests |
-| `pyproject.toml` | Rewrite | Build metadata, deps, entry point |
-| `main.py` `db.py` etc. (root) | Delete | Superseded by src/pulsar/ |
+| File                          | Action        | Responsibility                       |
+| ----------------------------- | ------------- | ------------------------------------ |
+| `src/pulsar/__init__.py`      | Create        | Package marker (empty)               |
+| `src/pulsar/db.py`            | Move + extend | DuckDB layer + `run_as_module` field |
+| `src/pulsar/executor.py`      | Move + extend | Subprocess runner + `_build_cmd`     |
+| `src/pulsar/scheduler.py`     | Move          | APScheduler wrapper                  |
+| `src/pulsar/server.py`        | Move + extend | FastAPI app + UI HTML                |
+| `src/pulsar/main.py`          | Move + extend | CLI entry point                      |
+| `tests/__init__.py`           | Create        | Test package marker                  |
+| `tests/test_db.py`            | Create        | DB layer tests                       |
+| `tests/test_executor.py`      | Create        | Executor command-build tests         |
+| `tests/test_api.py`           | Create        | API endpoint tests                   |
+| `pyproject.toml`              | Rewrite       | Build metadata, deps, entry point    |
+| `main.py` `db.py` etc. (root) | Delete        | Superseded by src/pulsar/            |
 
 ---
 
 ## Task 1: Restructure into src/pulsar package
 
 **Files:**
+
 - Create: `src/pulsar/__init__.py`
 - Create: `src/pulsar/db.py`
 - Create: `src/pulsar/executor.py`
@@ -56,6 +57,7 @@ cp db.py src/pulsar/db.py
 - [ ] **Step 3: Write src/pulsar/executor.py** (update import)
 
 Replace the first import line:
+
 ```python
 # OLD
 from db import Database, Job, JobRun
@@ -64,6 +66,7 @@ from .db import Database, Job, JobRun
 ```
 
 Full file at `src/pulsar/executor.py`:
+
 ```python
 """Job executor — runs Python scripts as subprocesses in background threads."""
 
@@ -76,7 +79,7 @@ from typing import Dict, Optional
 
 from .db import Database, Job, JobRun
 
-logger = logging.getLogger("pyrunner.executor")
+logger = logging.getLogger("Pulsar.executor")
 
 
 class JobExecutor:
@@ -178,7 +181,7 @@ from apscheduler.triggers.cron import CronTrigger
 from .db import Database, Job
 from .executor import JobExecutor
 
-logger = logging.getLogger("pyrunner.scheduler")
+logger = logging.getLogger("Pulsar.scheduler")
 
 
 class JobScheduler:
@@ -211,7 +214,7 @@ class JobScheduler:
             self.executor.execute,
             trigger=trigger,
             args=[job.id, "scheduler"],
-            id=f"pyrunner_{job.id}",
+            id=f"Pulsar_{job.id}",
             name=job.name,
             replace_existing=True,
         )
@@ -253,6 +256,7 @@ class JobScheduler:
 - [ ] **Step 5: Write src/pulsar/server.py** (update imports only — all other changes come in later tasks)
 
 Replace the three import lines at the top:
+
 ```python
 # OLD
 from db import Database
@@ -269,6 +273,7 @@ Full file at `src/pulsar/server.py` — copy `server.py` from root, then apply t
 - [ ] **Step 6: Write src/pulsar/main.py** (update imports only)
 
 Replace the four import lines:
+
 ```python
 # OLD
 from db import Database
@@ -330,14 +335,15 @@ pulsar --help
 ```
 
 Expected output:
-```
-usage: pyrunner [-h] [--db DB] {serve,add,list,trigger,remove,history} ...
 
-PyRunner — lightweight Python process manager
+```
+usage: Pulsar [-h] [--db DB] {serve,add,list,trigger,remove,history} ...
+
+Pulsar — lightweight Python process manager
 ...
 ```
 
-(The name still says "pyrunner" — that gets fixed in Task 2.)
+(The name still says "Pulsar" — that gets fixed in Task 2.)
 
 - [ ] **Step 10: Delete the old root-level source files**
 
@@ -366,6 +372,7 @@ git commit -m "feat: restructure into src/pulsar package with entry point"
 ## Task 2: Rename to Pulsar
 
 **Files:**
+
 - Modify: `src/pulsar/main.py`
 - Modify: `src/pulsar/executor.py`
 - Modify: `src/pulsar/scheduler.py`
@@ -374,29 +381,33 @@ git commit -m "feat: restructure into src/pulsar package with entry point"
 - [ ] **Step 1: Update logger names and CLI strings in src/pulsar/main.py**
 
 Change these lines:
+
 ```python
 # OLD
-log = logging.getLogger("pyrunner")
+log = logging.getLogger("Pulsar")
 # NEW
 log = logging.getLogger("pulsar")
 ```
+
 ```python
 # OLD
-log.info("PyRunner starting → http://%s:%s", args.host, args.port)
+log.info("Pulsar starting → http://%s:%s", args.host, args.port)
 # NEW
 log.info("Pulsar starting → http://%s:%s", args.host, args.port)
 ```
+
 ```python
 # OLD
-log.info("PyRunner stopped.")
+log.info("Pulsar stopped.")
 # NEW
 log.info("Pulsar stopped.")
 ```
+
 ```python
 # OLD
     p = argparse.ArgumentParser(
-        prog="pyrunner",
-        description="PyRunner — lightweight Python process manager",
+        prog="Pulsar",
+        description="Pulsar — lightweight Python process manager",
 # NEW
     p = argparse.ArgumentParser(
         prog="pulsar",
@@ -404,10 +415,11 @@ log.info("Pulsar stopped.")
 ```
 
 Also update the module docstring at the top of the file:
+
 ```python
 # OLD
 """
-PyRunner — a lightweight Python process manager.
+Pulsar — a lightweight Python process manager.
 
 Usage:
     python main.py serve [--host 0.0.0.0] [--port 8844]
@@ -435,7 +447,7 @@ Usage:
 
 ```python
 # OLD
-logger = logging.getLogger("pyrunner.executor")
+logger = logging.getLogger("Pulsar.executor")
 # NEW
 logger = logging.getLogger("pulsar.executor")
 ```
@@ -444,15 +456,16 @@ logger = logging.getLogger("pulsar.executor")
 
 ```python
 # OLD
-logger = logging.getLogger("pyrunner.scheduler")
+logger = logging.getLogger("Pulsar.scheduler")
 # NEW
 logger = logging.getLogger("pulsar.scheduler")
 ```
 
 Also update the APScheduler job id prefix (cosmetic but consistent):
+
 ```python
 # OLD
-            id=f"pyrunner_{job.id}",
+            id=f"Pulsar_{job.id}",
 # NEW
             id=f"pulsar_{job.id}",
 ```
@@ -461,23 +474,25 @@ Also update the APScheduler job id prefix (cosmetic but consistent):
 
 ```python
 # OLD
-    app = FastAPI(title="PyRunner", docs_url="/docs")
+    app = FastAPI(title="Pulsar", docs_url="/docs")
 # NEW
     app = FastAPI(title="Pulsar", docs_url="/docs")
 ```
 
 In `_HTML`, update the `<title>` and `<h1>`:
+
 ```html
 <!-- OLD -->
-<title>PyRunner</title>
+<title>Pulsar</title>
 <!-- NEW -->
 <title>Pulsar</title>
 ```
+
 ```html
 <!-- OLD -->
-  <h1><span>⚡</span> PyRunner</h1>
+<h1><span>⚡</span> Pulsar</h1>
 <!-- NEW -->
-  <h1><span>◉</span> Pulsar</h1>
+<h1><span>◉</span> Pulsar</h1>
 ```
 
 - [ ] **Step 5: Verify rename**
@@ -487,6 +502,7 @@ pulsar --help
 ```
 
 Expected:
+
 ```
 usage: pulsar [-h] [--db DB] {serve,add,list,trigger,remove,history} ...
 
@@ -505,6 +521,7 @@ git commit -m "feat: rename to Pulsar across all user-facing strings"
 ## Task 3: DB migration for run_as_module
 
 **Files:**
+
 - Create: `tests/__init__.py`
 - Create: `tests/test_db.py`
 - Modify: `src/pulsar/db.py`
@@ -589,6 +606,7 @@ Expected: `AttributeError: 'Job' object has no attribute 'run_as_module'` or sim
 - [ ] **Step 4: Update src/pulsar/db.py — Job dataclass, schema, and add_job**
 
 Add `run_as_module: bool = False` as the 9th field of `Job`:
+
 ```python
 @dataclass
 class Job:
@@ -604,6 +622,7 @@ class Job:
 ```
 
 Update `_init_schema` to include the column in CREATE TABLE and add the ALTER TABLE migration:
+
 ```python
     def _init_schema(self):
         with self._lock:
@@ -640,6 +659,7 @@ Update `_init_schema` to include the column in CREATE TABLE and add the ALTER TA
 ```
 
 Update `add_job` to accept and persist `run_as_module`:
+
 ```python
     def add_job(self, name: str, script_path: str, cron_expression: str,
                 args: str = "", run_as_module: bool = False) -> Job:
@@ -659,6 +679,7 @@ pytest tests/test_db.py -v
 ```
 
 Expected:
+
 ```
 tests/test_db.py::test_add_job_defaults_no_module PASSED
 tests/test_db.py::test_add_job_as_module PASSED
@@ -675,9 +696,10 @@ git commit -m "feat: add run_as_module field to jobs with schema migration"
 
 ---
 
-## Task 4: Executor _build_cmd + module support
+## Task 4: Executor \_build_cmd + module support
 
 **Files:**
+
 - Create: `tests/test_executor.py`
 - Modify: `src/pulsar/executor.py`
 
@@ -738,9 +760,10 @@ pytest tests/test_executor.py -v
 
 Expected: `AttributeError: 'JobExecutor' object has no attribute '_build_cmd'`
 
-- [ ] **Step 3: Add _build_cmd to src/pulsar/executor.py and update _run**
+- [ ] **Step 3: Add \_build_cmd to src/pulsar/executor.py and update \_run**
 
 Add this method inside `JobExecutor` (before `_run`):
+
 ```python
     def _build_cmd(self, job: Job) -> list:
         if job.run_as_module:
@@ -753,6 +776,7 @@ Add this method inside `JobExecutor` (before `_run`):
 ```
 
 Update the start of `_run` to use `_build_cmd` (replace the existing `cmd = ...` lines):
+
 ```python
     def _run(self, job: Job, run: JobRun):
         cmd = self._build_cmd(job)
@@ -763,6 +787,7 @@ Update the start of `_run` to use `_build_cmd` (replace the existing `cmd = ...`
 ```
 
 Remove the now-redundant lines from `_run`:
+
 ```python
 # DELETE these two lines that were at the top of _run:
         cmd = [sys.executable, job.script_path]
@@ -777,6 +802,7 @@ pytest tests/test_executor.py -v
 ```
 
 Expected:
+
 ```
 tests/test_executor.py::test_build_cmd_script PASSED
 tests/test_executor.py::test_build_cmd_module PASSED
@@ -796,6 +822,7 @@ git commit -m "feat: add _build_cmd with python -m module support"
 ## Task 5: API + CLI module support
 
 **Files:**
+
 - Create: `tests/test_api.py`
 - Modify: `src/pulsar/server.py`
 - Modify: `src/pulsar/main.py`
@@ -898,6 +925,7 @@ class AddJobRequest(BaseModel):
 - [ ] **Step 5: Update list_jobs to include run_as_module in response**
 
 In the `list_jobs` endpoint, add `"run_as_module": j.run_as_module` to the dict:
+
 ```python
         out.append({
             "id": j.id, "name": j.name, "script_path": j.script_path,
@@ -919,6 +947,7 @@ Expected: all three PASS.
 - [ ] **Step 7: Add --module flag to CLI in src/pulsar/main.py**
 
 In `cmd_add`, update the print to show the mode:
+
 ```python
 def cmd_add(args):
     """Register a new job."""
@@ -936,6 +965,7 @@ def cmd_add(args):
 ```
 
 In the `add` subparser section, add the `--module` flag and update the script help text:
+
 ```python
     # add
     s = sub.add_parser("add", help="Register a new job")
@@ -969,42 +999,115 @@ git commit -m "feat: expose run_as_module in API, add --module CLI flag"
 ## Task 6: UI — module checkbox in Add Job modal
 
 **Files:**
+
 - Modify: `src/pulsar/server.py` (the `_HTML` string)
 
-- [ ] **Step 1: Update the Script Path field label and hint in _HTML**
+- [ ] **Step 1: Update the Script Path field label and hint in \_HTML**
 
 Find this block in `_HTML`:
+
 ```html
-  <div class="fg"><label>Script Path</label><input id="fS" placeholder="/home/user/scripts/report.py"><div class="hint">Absolute or relative path to a Python script</div></div>
+<div class="fg">
+  <label>Script Path</label
+  ><input id="fS" placeholder="/home/user/scripts/report.py" />
+  <div class="hint">Absolute or relative path to a Python script</div>
+</div>
 ```
 
 Replace with:
+
 ```html
-  <div class="fg"><label>Script / Module</label><input id="fS" placeholder="/home/user/scripts/report.py or mypackage.tasks"><div class="hint">Path to a .py file, or dotted module name (e.g. mypackage.tasks.report)</div></div>
-  <div class="fg"><label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#374151"><input type="checkbox" id="fM" style="width:auto;margin:0"> Run as module (<code>-m</code>)</label></div>
+<div class="fg">
+  <label>Script / Module</label
+  ><input
+    id="fS"
+    placeholder="/home/user/scripts/report.py or mypackage.tasks"
+  />
+  <div class="hint">
+    Path to a .py file, or dotted module name (e.g. mypackage.tasks.report)
+  </div>
+</div>
+<div class="fg">
+  <label
+    style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#374151"
+    ><input type="checkbox" id="fM" style="width:auto;margin:0" /> Run as module
+    (<code>-m</code>)</label
+  >
+</div>
 ```
 
 - [ ] **Step 2: Update doAdd() in the script block to include run_as_module**
 
 Find:
+
 ```javascript
-async function doAdd(){
-  const[n,s,c,a]=[$('fN').value.trim(),$('fS').value.trim(),$('fC').value.trim(),$('fA').value.trim()];
-  if(!n||!s||!c){alert('Name, script and cron are required.');return}
-  const r=await fetch('/api/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,script_path:s,cron_expression:c,args:a})});
-  if(!r.ok){const e=await r.json();alert(e.detail||'Error');return}
-  closeAdd();['fN','fS','fC','fA'].forEach(i=>$(i).value='');refresh()
+async function doAdd() {
+  const [n, s, c, a] = [
+    $("fN").value.trim(),
+    $("fS").value.trim(),
+    $("fC").value.trim(),
+    $("fA").value.trim(),
+  ];
+  if (!n || !s || !c) {
+    alert("Name, script and cron are required.");
+    return;
+  }
+  const r = await fetch("/api/jobs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: n,
+      script_path: s,
+      cron_expression: c,
+      args: a,
+    }),
+  });
+  if (!r.ok) {
+    const e = await r.json();
+    alert(e.detail || "Error");
+    return;
+  }
+  closeAdd();
+  ["fN", "fS", "fC", "fA"].forEach((i) => ($(i).value = ""));
+  refresh();
 }
 ```
 
 Replace with:
+
 ```javascript
-async function doAdd(){
-  const[n,s,c,a,m]=[$('fN').value.trim(),$('fS').value.trim(),$('fC').value.trim(),$('fA').value.trim(),$('fM').checked];
-  if(!n||!s||!c){alert('Name, script and cron are required.');return}
-  const r=await fetch('/api/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,script_path:s,cron_expression:c,args:a,run_as_module:m})});
-  if(!r.ok){const e=await r.json();alert(e.detail||'Error');return}
-  closeAdd();['fN','fS','fC','fA'].forEach(i=>$(i).value='');$('fM').checked=false;refresh()
+async function doAdd() {
+  const [n, s, c, a, m] = [
+    $("fN").value.trim(),
+    $("fS").value.trim(),
+    $("fC").value.trim(),
+    $("fA").value.trim(),
+    $("fM").checked,
+  ];
+  if (!n || !s || !c) {
+    alert("Name, script and cron are required.");
+    return;
+  }
+  const r = await fetch("/api/jobs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: n,
+      script_path: s,
+      cron_expression: c,
+      args: a,
+      run_as_module: m,
+    }),
+  });
+  if (!r.ok) {
+    const e = await r.json();
+    alert(e.detail || "Error");
+    return;
+  }
+  closeAdd();
+  ["fN", "fS", "fC", "fA"].forEach((i) => ($(i).value = ""));
+  $("fM").checked = false;
+  refresh();
 }
 ```
 
@@ -1020,6 +1123,7 @@ git commit -m "feat: add module checkbox to Add Job modal"
 ## Task 7: API — recent_runs per job
 
 **Files:**
+
 - Modify: `tests/test_api.py`
 - Modify: `src/pulsar/server.py`
 
@@ -1078,6 +1182,7 @@ Expected: `KeyError` or `AssertionError` — `recent_runs` not present in respon
 - [ ] **Step 3: Update list_jobs in src/pulsar/server.py**
 
 Replace the existing `list_jobs` endpoint:
+
 ```python
     @app.get("/api/jobs")
     async def list_jobs():
@@ -1128,37 +1233,76 @@ git commit -m "feat: include recent_runs (last 30, oldest-first) in /api/jobs re
 ## Task 8: UI — execution dots column
 
 **Files:**
+
 - Modify: `src/pulsar/server.py` (the `_HTML` string)
 
-- [ ] **Step 1: Add renderDots helper function to the script block in _HTML**
+- [ ] **Step 1: Add renderDots helper function to the script block in \_HTML**
 
 Find the line `let R=[];` at the top of the `<script>` block and insert `renderDots` after the existing helper functions (after the `function bg(...)` line):
 
 ```javascript
-function renderDots(runs){
-  const colMap={success:'#4ade80',failed:'#f87171',running:'#60a5fa',crashed:'#fbbf24',cancelled:'#d1d5db'};
-  const filled=(runs||[]).map(r=>{
-    const col=colMap[r.status]||'#d1d5db';
-    const tip=`${r.status} — ${r.started_at?new Date(r.started_at).toLocaleString():'-'}`;
-    const anim=r.status==='running'?';animation:pulse 2s infinite':'';
+function renderDots(runs) {
+  const colMap = {
+    success: "#4ade80",
+    failed: "#f87171",
+    running: "#60a5fa",
+    crashed: "#fbbf24",
+    cancelled: "#d1d5db",
+  };
+  const filled = (runs || []).map((r) => {
+    const col = colMap[r.status] || "#d1d5db";
+    const tip = `${r.status} — ${r.started_at ? new Date(r.started_at).toLocaleString() : "-"}`;
+    const anim = r.status === "running" ? ";animation:pulse 2s infinite" : "";
     return `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col};margin:1px${anim}" title="${tip}"></span>`;
   });
-  const empty=30-filled.length;
-  const empties=empty>0?Array(empty).fill('<span style="display:inline-block;width:8px;height:8px;border-radius:50%;border:1px solid #e5e7eb;background:transparent;margin:1px"></span>'):[];
-  return [...empties,...filled].join('');
+  const empty = 30 - filled.length;
+  const empties =
+    empty > 0
+      ? Array(empty).fill(
+          '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;border:1px solid #e5e7eb;background:transparent;margin:1px"></span>',
+        )
+      : [];
+  return [...empties, ...filled].join("");
 }
 ```
 
 - [ ] **Step 2: Add "Runs" column header to the jobs table**
 
 Find:
+
 ```html
-      <table><thead><tr><th>Name</th><th>Script</th><th>Cron</th><th>Next Run</th><th>Last Run</th><th>On</th><th>Actions</th></tr></thead>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Script</th>
+      <th>Cron</th>
+      <th>Next Run</th>
+      <th>Last Run</th>
+      <th>On</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+</table>
 ```
 
 Replace with:
+
 ```html
-      <table><thead><tr><th>Name</th><th>Script</th><th>Cron</th><th>Next Run</th><th>Last Run</th><th>Runs</th><th>On</th><th>Actions</th></tr></thead>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Script</th>
+      <th>Cron</th>
+      <th>Next Run</th>
+      <th>Last Run</th>
+      <th>Runs</th>
+      <th>On</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+</table>
 ```
 
 - [ ] **Step 3: Add dots cell to each job row in fJobs()**
@@ -1166,12 +1310,14 @@ Replace with:
 Find the `tb.innerHTML=jobs.map(j=>\`<tr>` block. The rows currently end with the toggle and actions cells. Add the dots cell before the toggle cell.
 
 Find this part of the row template:
+
 ```javascript
 <td>${j.last_run?bg(j.last_run.status)+' '+ago(j.last_run.started_at):'-'}</td>
 <td><input type="checkbox" class="tgl" ${j.enabled?'checked':''} onchange="doToggle('${j.id}')"></td>
 ```
 
 Replace with:
+
 ```javascript
 <td>${j.last_run?bg(j.last_run.status)+' '+ago(j.last_run.started_at):'-'}</td>
 <td style="white-space:nowrap">${renderDots(j.recent_runs)}</td>
