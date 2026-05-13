@@ -26,6 +26,7 @@ class Job:
     enabled: bool
     created_at: str
     updated_at: str
+    run_as_module: bool = False
 
 
 @dataclass
@@ -63,9 +64,13 @@ class Database:
                     args        VARCHAR DEFAULT '',
                     enabled     BOOLEAN DEFAULT TRUE,
                     created_at  VARCHAR,
-                    updated_at  VARCHAR
+                    updated_at  VARCHAR,
+                    run_as_module BOOLEAN DEFAULT FALSE
                 )
             """)
+            self._conn.execute(
+                "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS run_as_module BOOLEAN DEFAULT FALSE"
+            )
             self._conn.execute("""
                 CREATE TABLE IF NOT EXISTS job_runs (
                     id           VARCHAR PRIMARY KEY,
@@ -93,14 +98,15 @@ class Database:
 
     # ── jobs CRUD ───────────────────────────────────────────────────────
 
-    def add_job(self, name: str, script_path: str, cron_expression: str, args: str = "") -> Job:
+    def add_job(self, name: str, script_path: str, cron_expression: str,
+                args: str = "", run_as_module: bool = False) -> Job:
         jid = _gen_id()
         now = _now()
         self._exec(
-            "INSERT INTO jobs VALUES (?,?,?,?,?,TRUE,?,?)",
-            [jid, name, script_path, cron_expression, args, now, now],
+            "INSERT INTO jobs VALUES (?,?,?,?,?,TRUE,?,?,?)",
+            [jid, name, script_path, cron_expression, args, now, now, run_as_module],
         )
-        return Job(jid, name, script_path, cron_expression, args, True, now, now)
+        return Job(jid, name, script_path, cron_expression, args, True, now, now, run_as_module)
 
     def get_jobs(self) -> List[Job]:
         return [Job(*r) for r in self._query("SELECT * FROM jobs ORDER BY name")]
