@@ -249,7 +249,8 @@ tr:hover td{background:#f9fafb}
 <div class="mo" id="mAdd"><div class="md">
   <h3>Add New Job</h3>
   <div class="fg"><label>Name</label><input id="fN" placeholder="daily-report"><div class="hint">Unique identifier for this job</div></div>
-  <div class="fg"><label>Script Path</label><input id="fS" placeholder="/home/user/scripts/report.py"><div class="hint">Absolute or relative path to a Python script</div></div>
+  <div class="fg"><label>Script / Module</label><input id="fS" placeholder="/home/user/scripts/report.py or mypackage.tasks"><div class="hint">Path to a .py file, or dotted module name (e.g. mypackage.tasks.report)</div></div>
+  <div class="fg"><label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#374151"><input type="checkbox" id="fM" style="width:auto;margin:0"> Run as module (<code>-m</code>)</label></div>
   <div class="fg"><label>Cron Expression</label><input id="fC" placeholder="*/5 * * * *"><div class="hint">5-field cron: minute hour day month weekday</div></div>
   <div class="fg"><label>Arguments <span class="muted">(optional)</span></label><input id="fA" placeholder="--verbose --date today"></div>
   <div class="fa"><button class="btn" onclick="closeAdd()">Cancel</button><button class="btn bp" onclick="doAdd()">Add Job</button></div>
@@ -307,11 +308,11 @@ function closeAdd(){$('mAdd').classList.remove('open')}
 function closeLog(){$('mLog').classList.remove('open')}
 
 async function doAdd(){
-  const[n,s,c,a]=[$('fN').value.trim(),$('fS').value.trim(),$('fC').value.trim(),$('fA').value.trim()];
+  const[n,s,c,a,m]=[$('fN').value.trim(),$('fS').value.trim(),$('fC').value.trim(),$('fA').value.trim(),$('fM').checked];
   if(!n||!s||!c){alert('Name, script and cron are required.');return}
-  const r=await fetch('/api/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,script_path:s,cron_expression:c,args:a})});
+  const r=await fetch('/api/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,script_path:s,cron_expression:c,args:a,run_as_module:m})});
   if(!r.ok){const e=await r.json();alert(e.detail||'Error');return}
-  closeAdd();['fN','fS','fC','fA'].forEach(i=>$(i).value='');refresh()
+  closeAdd();['fN','fS','fC','fA'].forEach(i=>$(i).value='');$('fM').checked=false;refresh()
 }
 
 document.querySelectorAll('.mo').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open')}));
